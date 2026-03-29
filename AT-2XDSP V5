@@ -1,0 +1,414 @@
+desc:Active 3 Way CrossOver LR4 DSP Processor By AnjasTec - (AT-2XDSP) V5
+//tags: crossover, dsp, foh, signal processor, gain controls, precision LR4 controls, subwoofer controls
+
+//================= USER CONTROL ==================//
+//================ FINAL REFERENCE ================//
+// Profile  : EDM Balanced / Dangduts / Hardcores / Deep Techno / Touring Concert Style
+// Status   : Stable (Smoother Kick / Safer Headroom / No Hard Clip / Preserved Sub Texture / Clean Phase / LR4 Precision)
+// Tuning   : Locked (Optimized for daily listening + event feel)
+// Warning  : Avoid extreme changes on:
+//            - comp_th (compression threshold)
+//            - dyn_p   (dynamic punch)
+//            - kick_q  (kick focus width)
+//=================================================//
+
+//================ LOW END CONTROL ==================//
+//sub_bot:38<25,55,1>Subsonic (Hz) | Cut frekuensi ultra rendah (LR4 anti rumble)
+//sub_tune:0<-10,10,0.5>Subsonic Tune (Hz) | Geser titik subsonic tanpa ubah base
+//sub_q:0.92<0.5,1.5,0.01>Subsonic Q | Ketegasan / karakter subsonic
+//sub_pnc:2.2<0,12,0.5>Kick Punch (dB) | Boost area punch kick (band-pass focus boster)
+//kick_freq:48<45,65,1>Kick Punch (Hz) | Punch kick tuner
+//kick_q:4.20<1,10,0.1>Kick Punch (Q) | Lebar fokus frekuensi punch kick
+
+//================ CROSSOVER ==================//
+//xo_pt:77<60,80,1>Crossover Base (Hz) | Titik pisah sub vs mid (LR4)
+//xo_rng:14<0,50,1>Dynamic Base Range | Pergerakan Base mengikuti energi bass
+//mid_low:77<77,150,1>Mid Low Cut (Hz) | HPF untuk jalur mid (LR4)
+
+//================ DYNAMIC MANAGEMENT ==================//
+//dyn_base:0<-6,6,0.5>Dynamic Base Bias (dB) | Sensitivitas kontrol dinamis antar band
+//aeq_amt:1<0,4,0.1>Auto EQ Amount | Depth koreksi tone adaptif (bass-mid / mid-high)
+
+//================ LOOKAHEAD PROTECTION ==================//
+//look_ahead:0.5<0,5,0.1>Lookahead Buffer (ms) | Buffer untuk deteksi spike awal
+//spike_th:0.9<0.5,1.5,0.05>Spike Threshold | Threshold deteksi spike
+//dc_th:0.01<0.001,0.1,0.001>DC Threshold | Threshold deteksi DC offset
+//lim_look:0.8<0.5,1.5,0.05>Lookahead Limiter | Limiter untuk spike
+
+//================ LEVEL CONTROL ==================//
+//v_sub:0<-20,12,0.5>Sub Vol (dB) | Level utama subwoofer
+//v_mid:0<-20,12,0.5>Mid Vol (dB) | Level utama mid/high
+//sub_trim:-4<-6,6,0.5>Sub Trim | Fine adjustment sub (subsonic range)
+//mid_trim:4<-6,6,0.5>Mid Trim | Fine adjustment mid (bass-mid range)
+
+//================ CHARACTER / COLOR ==================//
+//drv_sub:0.70<0,5,0.5>Sub Drive | Sat sub warm
+//drv_mid:0.90<0,5,0.5>Mid Drive | Sat mid/high warm
+
+//================ DYNAMIC CONTROL ==================//
+//dyn_p:2.6<0,12,0.5>Dynamic Punch | Punch mengikuti envelope signal
+//atk_ms:18<5,100,1>Punch Attack (ms)
+//rel_ms:180<20,300,1>Punch Release (ms)
+//comp_th:-13<-40,0,1>Sub Comp Threshold (dB)
+//comp_rt:2.6<1,6,0.1>Comp Ratio
+
+//================ OUTPUT CONTROL ==================//
+//sub_inv:0<0,1,1>Sub Phase | Balik phase sub (0=normal / 1=invert)
+//mid_inv:0<0,1,1>Mid Phase | Balik phase mid
+//out_mode:0<0,1,1>Output Mode
+//0 = Mid (L) | Sub (R)
+//1 = Sub (L) | Mid (R)
+
+@init
+pi = $PI;
+q = 0.70710678;
+
+// safety ceiling
+limit_th = 0.985;
+hard_th  = 0.998;
+
+// default tuning
+sub_bot = 38;
+sub_tune = 0;
+sub_q = 0.92;
+
+sub_pnc = 2.2;
+kick_freq = 48;
+kick_q = 4.20;
+xo_pt = 70;
+xo_rng = 6;
+mid_low = 77;
+
+dyn_base = 0;
+aeq_amt = 1;
+
+// lookahead defaults
+look_ahead = 1.00;
+spike_th = 1.10;
+dc_th = 0.01;
+lim_look = 0.8;
+
+v_sub = 0.00;
+v_mid = 0.00;
+sub_trim = 0.00;
+mid_trim = 0.00;
+
+drv_sub = 0.70;
+drv_mid = 0.90;
+
+dyn_p = 2.6;
+atk_ms = 18;
+rel_ms = 180;
+comp_th = -13;
+comp_rt = 2.6;
+
+sub_inv = 0;
+mid_inv = 0;
+out_mode = 0;
+
+// envelopes
+env = 0;
+rms = 0;
+p_env = 0;
+xo_dyn = xo_pt;
+comp_gain = 1;
+mix_gr = 1;
+look_gr = 1;
+
+// band detectors for adaptive management
+sub_env = 0;
+mid_env = 0;
+hi_env = 0;
+mid_prev = 0;
+
+// lookahead states
+look_buf_size = 512;
+look_w = 0;
+dc_est = 0;
+raw_prev = 0;
+
+// smoothed gains
+g_sub = 1;
+g_mid = 1;
+drv_s = 1;
+drv_m = 1;
+
+// filter states
+x1=0; x2=0; x3=0; x4=0; x5=0; x6=0; x7=0; x8=0;
+x9=0; x10=0; x11=0; x12=0; x13=0; x14=0; x15=0; x16=0;
+x17=0; x18=0; x19=0; x20=0; x21=0; x22=0;
+y1=0; y2=0; y3=0; y4=0; y5=0; y6=0; y7=0; y8=0;
+y9=0; y10=0; y11=0; y12=0; y13=0; y14=0; y15=0; y16=0;
+y17=0; y18=0; y19=0; y20=0; y21=0; y22=0;
+
+@sample
+
+//================ LOOKAHEAD INPUT / DC PROTECTION ==================
+in_raw = (spl0 + spl1) * 0.5;
+
+look_delay = look_ahead * 0.001 * srate;
+look_delay = look_delay < 1 ? 1 : look_delay;
+look_delay = look_delay > (look_buf_size - 2) ? (look_buf_size - 2) : look_delay;
+look_delay_i = floor(look_delay);
+
+// spike detector dari input yang belum diproses
+spike = max(abs(in_raw), abs(in_raw - raw_prev) * 2.0);
+raw_prev = in_raw;
+
+// DC offset tracker
+dc_est += (in_raw - dc_est) * 0.0003;
+dc_abs = abs(dc_est);
+dc_corr = dc_abs > dc_th ? dc_est : (dc_est * 0.25);
+
+// lookahead buffer
+look_r = look_w - look_delay_i;
+look_r < 0 ? look_r += look_buf_size;
+
+look_in = mem[look_r];
+mem[look_w] = in_raw;
+
+look_w += 1;
+look_w >= look_buf_size ? look_w = 0;
+
+// input yang diproses adalah versi delayed + DC correction
+in_m = look_in - dc_corr;
+
+// spike-based protection
+spike_ov = spike > spike_th ? (spike / spike_th) : 1;
+look_t = spike_ov > 1 ? (1 / (spike_ov ^ (0.95 + lim_look * 0.25))) : 1;
+look_gr += (look_t - look_gr) * (look_t < look_gr ? 0.25 : 0.004);
+look_gr = look_gr < 0.65 ? 0.65 : look_gr;
+look_gr = look_gr > 1 ? 1 : look_gr;
+
+//================ ENVELOPE ==================
+env = max(abs(in_m), env*0.985);
+rms = sqrt(env*env*0.12 + rms*0.88);
+
+//================ ATTACK / RELEASE ==================
+atk = exp(-1/(atk_ms*0.001*srate));
+rel = exp(-1/(rel_ms*0.001*srate));
+
+target = env;
+p_env = target > p_env ? (p_env*atk + target*(1-atk)) : (p_env*rel + target*(1-rel));
+p_env = p_env > 1 ? 1 : p_env;
+
+//================ SMOOTH GAIN ==================
+sm_a = exp(-1/(45*0.001*srate));
+sm_b = 1 - sm_a;
+
+g_sub_t = 10^((v_sub + sub_trim)/20);
+g_mid_t = 10^((v_mid + mid_trim)/20);
+drv_s_t = 1 + drv_sub*0.12;
+drv_m_t = 1 + drv_mid*0.12;
+
+g_sub += (g_sub_t - g_sub) * sm_b;
+g_mid += (g_mid_t - g_mid) * sm_b;
+drv_s += (drv_s_t - drv_s) * sm_b;
+drv_m += (drv_m_t - drv_m) * sm_b;
+
+//================ DYNAMIC XO ==================
+xo_target = xo_pt + env*xo_rng;
+xo_dyn += (xo_target - xo_dyn) * 0.003;
+
+//================ FILTER CALC ==================
+
+// SUBSONIC HPF
+sub_cut = sub_bot + sub_tune;
+sub_cut = sub_cut < 20 ? 20 : sub_cut;
+sub_cut = sub_cut > 55 ? 55 : sub_cut;
+
+w0 = 2*pi*sub_cut/srate; sn = sin(w0); cs = cos(w0); al = sn/(2*sub_q);
+sb_b0 = (1+cs)/2;
+sb_b1 = -(1+cs);
+sb_b2 = (1+cs)/2;
+sb_a0 = 1+al;
+sb_a1 = -2*cs;
+sb_a2 = 1-al;
+sb_b0 /= sb_a0; sb_b1 /= sb_a0; sb_b2 /= sb_a0;
+sb_a1 /= sb_a0; sb_a2 /= sb_a0;
+
+// XO LPF / HPF
+w0 = 2*pi*xo_dyn/srate; sn = sin(w0); cs = cos(w0); al = sn/(2*q);
+
+// LPF
+lp_b0 = (1-cs)/2;
+lp_b1 = 1-cs;
+lp_b2 = (1-cs)/2;
+lp_a0 = 1+al;
+lp_a1 = -2*cs;
+lp_a2 = 1-al;
+lp_b0 /= lp_a0; lp_b1 /= lp_a0; lp_b2 /= lp_a0;
+lp_a1 /= lp_a0; lp_a2 /= lp_a0;
+
+// HPF
+hp_b0 = (1+cs)/2;
+hp_b1 = -(1+cs);
+hp_b2 = (1+cs)/2;
+hp_a0 = 1+al;
+hp_a1 = -2*cs;
+hp_a2 = 1-al;
+hp_b0 /= hp_a0; hp_b1 /= hp_a0; hp_b2 /= hp_a0;
+hp_a1 /= hp_a0; hp_a2 /= hp_a0;
+
+// MID LOW CUT
+w0 = 2*pi*mid_low/srate; sn = sin(w0); cs = cos(w0); al = sn/(2*q);
+ml_b0 = (1+cs)/2;
+ml_b1 = -(1+cs);
+ml_b2 = (1+cs)/2;
+ml_a0 = 1+al;
+ml_a1 = -2*cs;
+ml_a2 = 1-al;
+ml_b0 /= ml_a0; ml_b1 /= ml_a0; ml_b2 /= ml_a0;
+ml_a1 /= ml_a0; ml_a2 /= ml_a0;
+
+// KICK FOCUS
+w0 = 2*pi*kick_freq/srate; sn = sin(w0); cs = cos(w0);
+al = sn/(2*kick_q);
+g = 10^(sub_pnc/20);
+
+pk_b0 = 1+al*g;
+pk_b1 = -2*cs;
+pk_b2 = 1-al*g;
+pk_a0 = 1+al/g;
+pk_a1 = -2*cs;
+pk_a2 = 1-al/g;
+
+pk_b0 /= pk_a0; pk_b1 /= pk_a0; pk_b2 /= pk_a0;
+pk_a1 /= pk_a0; pk_a2 /= pk_a0;
+
+//================ SUB PATH ==================
+
+// SUBSONIC LR4
+s1a = sb_b0*in_m + sb_b1*x1 + sb_b2*x2 - sb_a1*y1 - sb_a2*y2;
+x2 = x1; x1 = in_m; y2 = y1; y1 = s1a;
+
+s1 = sb_b0*s1a + sb_b1*x17 + sb_b2*x18 - sb_a1*y17 - sb_a2*y18;
+x18 = x17; x17 = s1a; y18 = y17; y17 = s1;
+
+// LPF LR4
+s2a = lp_b0*s1 + lp_b1*x3 + lp_b2*x4 - lp_a1*y3 - lp_a2*y4;
+x4 = x3; x3 = s1; y4 = y3; y3 = s2a;
+
+s2 = lp_b0*s2a + lp_b1*x5 + lp_b2*x6 - lp_a1*y5 - lp_a2*y6;
+x6 = x5; x5 = s2a; y6 = y5; y5 = s2;
+
+// kick focus
+sp = pk_b0*s2 + pk_b1*x21 + pk_b2*x22 - pk_a1*y21 - pk_a2*y22;
+x22 = x21; x21 = s2; y22 = y21; y21 = sp;
+
+// punch lebih smooth, dan dikurangi saat transient terlalu tajam
+p_gain = 1 + (p_env * dyn_p * 0.06) - (spike * 0.03);
+p_gain = p_gain > 1.14 ? 1.14 : p_gain;
+p_gain = p_gain < 0.98 ? 0.98 : p_gain;
+
+out_sub = sp * p_gain;
+
+// compressor lebih halus
+thr = 10^(comp_th/20);
+det = abs(out_sub);
+over = det > thr ? (det/thr) : 1;
+comp_t = over > 1 ? (1/(over^(1/comp_rt))) : 1;
+comp_gain += (comp_t - comp_gain) * 0.004;
+out_sub *= comp_gain;
+
+// drive lembut + blend clean agar kick tetap round
+sub_clean = out_sub;
+sub_sat = atan(out_sub * drv_s) / atan(drv_s);
+out_sub = sub_clean*0.78 + sub_sat*0.22;
+
+// texture kecil buat balikin rasa glerr sub, tapi aman
+sub_tex = tanh(out_sub * 1.10) / tanh(1.10);
+out_sub = out_sub*0.88 + sub_tex*0.12;
+
+// limiter natural
+out_sub = tanh(out_sub * 1.06) / tanh(1.06);
+
+// band detector update from sub
+sub_env = max(abs(out_sub), sub_env*0.995);
+
+//================ MID PATH ==================
+
+// HPF LR4
+m1a = hp_b0*in_m + hp_b1*x7 + hp_b2*x8 - hp_a1*y7 - hp_a2*y8;
+x8 = x7; x7 = in_m; y8 = y7; y7 = m1a;
+
+m1 = hp_b0*m1a + hp_b1*x9 + hp_b2*x10 - hp_a1*y9 - hp_a2*y10;
+x10 = x9; x9 = m1a; y10 = y9; y9 = m1;
+
+// MID LOW CUT aktif
+m1 = ml_b0*m1 + ml_b1*x13 + ml_b2*x14 - ml_a1*y13 - ml_a2*y14;
+x14 = x13; x13 = m1; y14 = y13; y13 = m1;
+
+// band detectors for adaptive EQ/dynamics
+mid_env = max(abs(m1), mid_env*0.995);
+hi_env = max(abs(m1 - mid_prev), hi_env*0.995);
+mid_prev = m1;
+
+//================ DYNAMIC AUTO EQ / TONE MANAGEMENT ==================
+// dyn_base mempercepat / memperlambat reaksi.
+// aeq_amt menentukan kedalaman koreksi band.
+
+dyn_thr = 0.12 + dyn_base*0.01;
+dyn_thr = dyn_thr < 0.05 ? 0.05 : dyn_thr;
+dyn_thr = dyn_thr > 0.35 ? 0.35 : dyn_thr;
+
+// bass-mid trim ketika sub sedang padat
+lm_cut = sub_env > dyn_thr ? ((sub_env - dyn_thr) * 0.80 * aeq_amt) : 0;
+lm_cut = lm_cut > 0.14 ? 0.14 : lm_cut;
+
+// mid-high trim ketika presence melonjak
+hm_cut = hi_env > (dyn_thr*0.75) ? ((hi_env - dyn_thr*0.75) * 0.88 * aeq_amt) : 0;
+hm_cut = hm_cut > 0.08 ? 0.08 : hm_cut;
+
+// apply adaptive tone trim before mid drive
+m1 = m1 * (1 - lm_cut);
+
+// drive mid
+out_mid = atan(m1 * drv_m) / atan(drv_m);
+
+// apply high-mid adaptive trim after drive
+out_mid = out_mid * (1 - hm_cut);
+
+// limiter natural
+out_mid = tanh(out_mid * 1.04) / tanh(1.04);
+
+//================ OUTPUT ==================
+
+out_sub *= g_sub;
+out_mid *= g_mid;
+
+// lookahead limiter applies to both bands
+out_sub *= look_gr;
+out_mid *= look_gr;
+
+// phase
+sub_out = sub_inv ? -out_sub : out_sub;
+mid_out = mid_inv ? -out_mid : out_mid;
+
+// safety gain guard before routing
+mix_peak = max(abs(sub_out), abs(mid_out));
+mix_t = mix_peak > limit_th ? (limit_th / mix_peak) : 1;
+mix_a = mix_t < mix_gr ? 0.06 : 0.002;
+mix_gr += (mix_t - mix_gr) * mix_a;
+
+sub_out *= mix_gr;
+mid_out *= mix_gr;
+
+// extra soft ceiling
+sub_out = tanh(sub_out * 1.03) / tanh(1.03);
+mid_out = tanh(mid_out * 1.03) / tanh(1.03);
+
+// routing
+out_mode == 0 ? (
+  spl0 = mid_out;
+  spl1 = sub_out;
+) : (
+  spl0 = sub_out;
+  spl1 = mid_out;
+);
+
+// final hard safety clamp
+spl0 > hard_th ? spl0 = hard_th;
+spl0 < -hard_th ? spl0 = -hard_th;
+spl1 > hard_th ? spl1 = hard_th;
+spl1 < -hard_th ? spl1 = -hard_th;
