@@ -1,0 +1,550 @@
+desc:Active 2 Way CrossOver LR4 DSP Processor By AnjasTec (AT-2DSP) v19
+//tags: crossover, dsp, foh, signal processor, gain controls, precision LR4 controls, subwoofer controls, auto headroom, super scoop, ultra low enhancer
+
+//================= USER CONTROL ==================//
+//================ FINAL REFERENCE ================//
+// Profile  : Super Scoop / 12inch 2ohm / EDM Deep Bass / Touring Concert Style
+// Status   : Stable (Linear Core / Triple Transient Guard / Auto Headroom / Ultra Low Enhancer / Adaptive Align / Dual Phase Comp / LR4 Precision)
+// Tuning   : Locked for practical daily use
+// Warning  : Keep source headroom safe because this build has no limiter / clipper / saturator / compressor.
+//=================================================//
+
+//================ LOW END CONTROL ==================//
+//sub_bot:36<25,55,1>Subsonic Base (Hz) | Titik potong ultra-rendah untuk buang rumble bawah sub
+//sub_tune:0<-10,10,0.5>Subsonic Tune (Hz) | Geser titik subsonic tanpa mengubah karakter dasar
+//sub_q:1.15<1.10,1.50,0.01>Subsonic Q | Ketegasan filter subsonic, makin tinggi makin fokus
+
+//sub_pnc:3<0,12,0.5>Kick Punch (dB) | Dorongan attack kick di area sub bawah
+//kick_freq:48<45,65,1>Kick Punch Frequency (Hz) | Pusat frekuensi punch kick
+//kick_q:5<1,10,0.1>Kick Punch Q | Lebar fokus punch kick, makin tinggi makin sempit
+
+//sbass_on:1<0,1,1>Sub-Bass On | Aktifkan penguatan body sub-bass
+//sbass_freq:64<60,68,1>Sub-Bass Center (Hz) | Titik fokus body sub-bass
+//sbass_q:1.18<1.10,1.25,0.01>Sub-Bass Shape | Bentuk shelf sub-bass, makin tinggi makin tajam
+//sbass_amt:0.45<0,4,0.1>Sub-Bass Amount | Besar kedalaman body sub-bass
+
+//ule_on:1<0,1,1>Ultra Low Enhancer On | Tambah rasa 30–45 Hz tanpa bikin boom
+//ule_freq:38<28,45,1>Ultra Low Center (Hz) | Pusat penguatan ultra low
+//ule_q:1.15<0.70,2.00,0.01>Ultra Low Shape | Bentuk shelf ultra low
+//ule_amt:0.50<0,4,0.05>Ultra Low Amount | Besar dorongan ultra low
+
+//================ CROSSOVER ==================//
+//xo_pt:70<60,80,1>Crossover Point (Hz) | Titik pisah utama sub dan mid
+//mid_low:78<75,150,1>Mid High-Pass (Hz) | Batas bawah jalur mid agar sub tidak bocor
+
+//================ PHASE ALIGNMENT ==================//
+//align_on:1<0,1,1>Phase Align On | Aktifkan micro-delay untuk sinkron sub dan mid
+//align_ms:0.30<0.25,0.80,0.01>Mid Align Delay (ms) | Delay halus untuk mencari titik paling nyatu
+
+//================ PHASE ROTATION COMPENSATION ==================//
+//ap_on:1<0,1,1>Phase Rotation Comp On | Aktifkan koreksi fase all-pass linear
+//ap_freq:72<60,90,1>All-Pass Frequency (Hz) | Pusat koreksi fase
+//ap_q:1.50<0.5,1.5,0.01>All-Pass Q | Ketajaman koreksi fase
+
+//================ SUB SMOOTHING ==================//
+//sub_smooth_on:1<0,1,1>Sub Smooth On | Aktifkan smoothing linear pada jalur sub
+//sub_smooth_hz:150<120,260,1>Sub Smooth Cutoff (Hz) | Batas smoothing untuk bikin sub lebih halus
+//sub_cleanup_on:1<0,1,1>Sub Cleanup On | Aktifkan tahap pembersih linear
+//sub_cleanup_hz:120<100,220,1>Sub Cleanup Cutoff (Hz) | Bersihkan sisa frekuensi atas dari jalur sub
+
+//================ SUB LEAK GUARD ==================//
+//sub_guard_on:1<0,1,1>Sub Leak Guard On | Aktifkan pengaman bocor frekuensi atas ke sub
+//sub_guard_hz:72<70,140,1>Sub Leak Guard Cutoff (Hz) | Batas atas strict untuk jalur sub
+//sub_tight:1.10<0.50,2.50,0.05>Sub Tightness | Seberapa ketat sub dipotong saat ada transien
+
+//================ HI-HAT / CLAP GUARD ==================//
+//clap_on:1<0,1,1>Hi-Hat/Clap Guard On | Redam hiss / clap / snare tail
+//clap_freq:9500<500,10500,10>Hi-Hat/Clap Detector Freq (Hz) | Highpass detector corner
+//clap_thr:0.60<0.05,0.90,0.01>Hi-Hat/Clap Threshold | Sensitivity threshold
+//clap_amt:0.65<0,1,0.01>Hi-Hat/Clap Amount | Sub duck depth
+//clap_rel:0.020<0.005,0.20,0.005>Hi-Hat/Clap Release | Recovery speed
+
+//================ KICK ATTACK GUARD ==================//
+//kickg_on:1<0,1,1>Kick Attack Guard On | Redam attack kick 500–2000 Hz
+//kickg_hp:500<200,3000,10>Kick Guard HP (Hz) | Batas bawah deteksi kick attack
+//kickg_lp:2000<500,6000,10>Kick Guard LP (Hz) | Batas atas deteksi kick attack
+//kickg_thr:0.16<0.05,0.90,0.01>Kick Guard Threshold | Sensitivity threshold
+//kickg_amt:0.04<0,1,0.01>Kick Guard Amount | Sub duck depth
+//kickg_rel:0.020<0.005,0.20,0.005>Kick Guard Release | Recovery speed
+
+//================ SNARE BAND GUARD ==================//
+//snr_on:1<0,1,1>Snare Band Guard On | Redam snare/clap body 1–8 kHz
+//snr_hp:1000<500,4000,10>Snare Guard HP (Hz) | Batas bawah deteksi snare body
+//snr_lp:8000<2000,12000,10>Snare Guard LP (Hz) | Batas atas deteksi snare body
+//snr_thr:0.10<0.01,0.80,0.01>Snare Guard Threshold | Sensitivity threshold
+//snr_amt:0.05<0,1,0.01>Snare Guard Amount | Sub duck depth
+//snr_rel:0.015<0.005,0.20,0.005>Snare Guard Release | Recovery speed
+
+//================ AUTO HEADROOM ==================//
+//auto_on:1<0,1,1>Auto Headroom On | Proteksi gain halus saat sub mulai terlalu padat
+//auto_thr:0.50<0.10,0.95,0.01>Auto Headroom Threshold | Titik mulai proteksi
+//auto_amt:0.20<0,1,0.01>Auto Headroom Amount | Besar reduksi gain saat mendekati batas
+//auto_rel:0.010<0.001,0.20,0.001>Auto Headroom Release | Kecepatan balik normal
+
+//================ LEVEL CONTROL ==================//
+//v_sub:0<-20,12,0.5>Sub Vol (dB) | Level utama subwoofer
+//v_mid:0<-20,12,0.5>Mid Vol (dB) | Level utama mid/high
+//sub_trim:-1<-6,6,0.5>Sub Trim | Fine adjustment sub (subsonic range)
+//mid_trim:-1<-6,6,0.5>Mid Trim | Fine adjustment mid (bass-mid range)
+
+//================ OUTPUT CONTROL ==================//
+//sub_inv:0<0,1,1>Sub Phase | Balik phase sub (0=normal / 1=invert)
+//mid_inv:0<0,1,1>Mid Phase | Balik phase mid
+//out_mode:0<0,1,1>Output Mode
+//0 = Mid (L) | Sub (R)
+//1 = Sub (L) | Mid (R)
+
+@init
+pi = $PI;
+q = 0.70710678;
+
+// default tuning
+sub_bot = 36;
+sub_tune = 0.00;
+sub_q = 1.15;
+
+sub_pnc = 3.50;
+kick_freq = 50;
+kick_q = 5.00;
+
+sbass_on = 1;
+sbass_freq = 64;
+sbass_q = 1.18;
+sbass_amt = 0.45;
+
+ule_on = 1;
+ule_freq = 38;
+ule_q = 1.15;
+ule_amt = 0.50;
+
+xo_pt = 70;
+mid_low = 78;
+
+align_on = 1;
+align_ms = 0.30;
+
+ap_on = 1;
+ap_freq = 72;
+ap_q = 1.50;
+
+sub_smooth_on = 1;
+sub_smooth_hz = 150;
+sub_cleanup_on = 1;
+sub_cleanup_hz = 120;
+
+sub_guard_on = 1;
+sub_guard_hz = 72;
+sub_tight = 1.10;
+
+clap_on = 1;
+clap_freq = 9500;
+clap_thr = 0.60;
+clap_amt = 0.65;
+clap_rel = 0.020;
+
+kickg_on = 1;
+kickg_hp = 500;
+kickg_lp = 2000;
+kickg_thr = 0.16;
+kickg_amt = 0.04;
+kickg_rel = 0.020;
+
+snr_on = 1;
+snr_hp = 1000;
+snr_lp = 8000;
+snr_thr = 0.10;
+snr_amt = 0.05;
+snr_rel = 0.015;
+
+auto_on = 1;
+auto_thr = 0.50;
+auto_amt = 0.20;
+auto_rel = 0.010;
+
+v_sub = 0.00;
+v_mid = 0.00;
+sub_trim = -1.50;
+mid_trim = -1.50;
+
+sub_inv = 0;
+mid_inv = 0;
+out_mode = 0;
+
+// filter coefficients placeholders
+sb_b0 = sb_b1 = sb_b2 = sb_a1 = sb_a2 = 0;
+lp_b0 = lp_b1 = lp_b2 = lp_a1 = lp_a2 = 0;
+hp_b0 = hp_b1 = hp_b2 = hp_a1 = hp_a2 = 0;
+ml_b0 = ml_b1 = ml_b2 = ml_a1 = ml_a2 = 0;
+pk_b0 = pk_b1 = pk_b2 = pk_a1 = pk_a2 = 0;
+ls_b0 = ls_b1 = ls_b2 = ls_a1 = ls_a2 = 0;
+ap_b0 = ap_b1 = ap_b2 = ap_a1 = ap_a2 = 0;
+sg_b0 = sg_b1 = sg_b2 = sg_a1 = sg_a2 = 0;
+ule_b0 = ule_b1 = ule_b2 = ule_a1 = ule_a2 = 0;
+
+// buffer sizes
+align_buf_size = 2048;
+align_ofs = 16384;
+align_w = 0;
+
+// states
+sub_post = 0;
+sub_sm = 0;
+sub_cl = 0;
+clap_gain = 1;
+kick_gain = 1;
+snr_gain = 1;
+auto_gain = 1;
+clap_lp = 0;
+kick_hp_state = 0;
+kick_lp_state = 0;
+snr_hp_state = 0;
+snr_lp_state = 0;
+auto_env = 0;
+
+// filter states
+x1=0; x2=0; x3=0; x4=0; x5=0; x6=0; x7=0; x8=0;
+x9=0; x10=0; x11=0; x12=0; x13=0; x14=0; x15=0; x16=0;
+x17=0; x18=0; x19=0; x20=0; x21=0; x22=0; x23=0; x24=0;
+x25=0; x26=0; x27=0; x28=0; x29=0; x30=0; x31=0; x32=0;
+y1=0; y2=0; y3=0; y4=0; y5=0; y6=0; y7=0; y8=0;
+y9=0; y10=0; y11=0; y12=0; y13=0; y14=0; y15=0; y16=0;
+y17=0; y18=0; y19=0; y20=0; y21=0; y22=0; y23=0; y24=0;
+y25=0; y26=0; y27=0; y28=0; y29=0; y30=0; y31=0; y32=0;
+
+@sample
+in_m = (spl0 + spl1) * 0.5;
+
+//================ HI-HAT / CLAP DETECTOR ==================
+clap_lp_a = exp(-2*pi*clap_freq/srate);
+clap_lp_b = 1 - clap_lp_a;
+clap_lp += (in_m - clap_lp) * clap_lp_b;
+clap_sig = in_m - clap_lp;
+clap_env = abs(clap_sig);
+
+clap_on ? (
+  clap_level = clap_env > clap_thr ? (clap_env - clap_thr) / (1 - clap_thr) : 0;
+  clap_level = clap_level > 1 ? 1 : clap_level;
+  clap_target = 1 - clap_amt * clap_level;
+  clap_gain += (clap_target - clap_gain) * clap_rel;
+) : (
+  clap_gain = 1;
+);
+
+//================ KICK ATTACK DETECTOR ==================
+kick_hp_a = exp(-2*pi*kickg_hp/srate);
+kick_hp_b = 1 - kick_hp_a;
+kick_lp_a = exp(-2*pi*kickg_lp/srate);
+kick_lp_b = 1 - kick_lp_a;
+
+kick_hp_state += (in_m - kick_hp_state) * kick_hp_b;
+kick_hp = in_m - kick_hp_state;
+kick_lp_state += (kick_hp - kick_lp_state) * kick_lp_b;
+kick_env = abs(kick_lp_state);
+
+kickg_on ? (
+  kick_level = kick_env > kickg_thr ? (kick_env - kickg_thr) / (1 - kickg_thr) : 0;
+  kick_level = kick_level > 1 ? 1 : kick_level;
+  kick_target = 1 - kickg_amt * kick_level;
+  kick_gain += (kick_target - kick_gain) * kickg_rel;
+) : (
+  kick_gain = 1;
+);
+
+//================ SNARE BAND DETECTOR ==================
+snr_hp_a = exp(-2*pi*snr_hp/srate);
+snr_hp_b = 1 - snr_hp_a;
+snr_lp_a = exp(-2*pi*snr_lp/srate);
+snr_lp_b = 1 - snr_lp_a;
+
+snr_hp_state += (in_m - snr_hp_state) * snr_hp_b;
+snr_band = in_m - snr_hp_state;
+snr_lp_state += (snr_band - snr_lp_state) * snr_lp_b;
+snr_env = abs(snr_lp_state);
+
+snr_on ? (
+  snr_level = snr_env > snr_thr ? (snr_env - snr_thr) / (1 - snr_thr) : 0;
+  snr_level = snr_level > 1 ? 1 : snr_level;
+  snr_target = 1 - snr_amt * snr_level;
+  snr_gain += (snr_target - snr_gain) * snr_rel;
+) : (
+  snr_gain = 1;
+);
+
+//================ FILTER CALC ==================//
+
+// SUBSONIC HPF
+sub_cut = sub_bot + sub_tune;
+sub_cut = sub_cut < 20 ? 20 : sub_cut;
+sub_cut = sub_cut > 55 ? 55 : sub_cut;
+
+w0 = 2*pi*sub_cut/srate; sn = sin(w0); cs = cos(w0); al = sn/(2*sub_q);
+sb_b0 = (1+cs)/2;
+sb_b1 = -(1+cs);
+sb_b2 = (1+cs)/2;
+sb_a0 = 1+al;
+sb_a1 = -2*cs;
+sb_a2 = 1-al;
+sb_b0 /= sb_a0; sb_b1 /= sb_a0; sb_b2 /= sb_a0;
+sb_a1 /= sb_a0; sb_a2 /= sb_a0;
+
+// LR4 XO LPF / HPF
+w0 = 2*pi*xo_pt/srate; sn = sin(w0); cs = cos(w0); al = sn/(2*q);
+
+// LPF
+lp_b0 = (1-cs)/2;
+lp_b1 = 1-cs;
+lp_b2 = (1-cs)/2;
+lp_a0 = 1+al;
+lp_a1 = -2*cs;
+lp_a2 = 1-al;
+lp_b0 /= lp_a0; lp_b1 /= lp_a0; lp_b2 /= lp_a0;
+lp_a1 /= lp_a0; lp_a2 /= lp_a0;
+
+// HPF
+hp_b0 = (1+cs)/2;
+hp_b1 = -(1+cs);
+hp_b2 = (1+cs)/2;
+hp_a0 = 1+al;
+hp_a1 = -2*cs;
+hp_a2 = 1-al;
+hp_b0 /= hp_a0; hp_b1 /= hp_a0; hp_b2 /= hp_a0;
+hp_a1 /= hp_a0; hp_a2 /= hp_a0;
+
+// MID LOW CUT
+w0 = 2*pi*mid_low/srate; sn = sin(w0); cs = cos(w0); al = sn/(2*q);
+ml_b0 = (1+cs)/2;
+ml_b1 = -(1+cs);
+ml_b2 = (1+cs)/2;
+ml_a0 = 1+al;
+ml_a1 = -2*cs;
+ml_a2 = 1-al;
+ml_b0 /= ml_a0; ml_b1 /= ml_a0; ml_b2 /= ml_a0;
+ml_a1 /= ml_a0; ml_a2 /= ml_a0;
+
+// KICK FOCUS (linear peaking EQ)
+w0 = 2*pi*kick_freq/srate; sn = sin(w0); cs = cos(w0);
+al = sn/(2*kick_q);
+g = 10^(sub_pnc/20);
+
+pk_b0 = 1+al*g;
+pk_b1 = -2*cs;
+pk_b2 = 1-al*g;
+pk_a0 = 1+al/g;
+pk_a1 = -2*cs;
+pk_a2 = 1-al/g;
+
+pk_b0 /= pk_a0; pk_b1 /= pk_a0; pk_b2 /= pk_a0;
+pk_a1 /= pk_a0; pk_a2 /= pk_a0;
+
+// SUB-BASS LOW SHELF (linear)
+sbass_db = sbass_on ? sbass_amt : 0;
+sbass_db = sbass_db > 3 ? 3 : sbass_db;
+A = 10^(sbass_db/40);
+w0 = 2*pi*sbass_freq/srate;
+sn = sin(w0);
+cs = cos(w0);
+S = sbass_q;
+alpha = sn/2 * sqrt((A + 1/A) * (1/S - 1) + 2);
+sqrtA = sqrt(A);
+
+ls_b0 =    A * ((A+1) - (A-1)*cs + 2*sqrtA*alpha);
+ls_b1 =  2*A * ((A-1) - (A+1)*cs);
+ls_b2 =    A * ((A+1) - (A-1)*cs - 2*sqrtA*alpha);
+ls_a0 =        (A+1) + (A-1)*cs + 2*sqrtA*alpha;
+ls_a1 =   -2 * ((A-1) + (A+1)*cs);
+ls_a2 =        (A+1) + (A-1)*cs - 2*sqrtA*alpha;
+
+ls_b0 /= ls_a0; ls_b1 /= ls_a0; ls_b2 /= ls_a0;
+ls_a1 /= ls_a0; ls_a2 /= ls_a0;
+
+// ALL-PASS PHASE COMPENSATION (sub)
+w0 = 2*pi*ap_freq/srate; sn = sin(w0); cs = cos(w0); al = sn/(2*ap_q);
+ap_b0 = 1-al;
+ap_b1 = -2*cs;
+ap_b2 = 1+al;
+ap_a0 = 1+al;
+ap_a1 = -2*cs;
+ap_a2 = 1-al;
+ap_b0 /= ap_a0; ap_b1 /= ap_a0; ap_b2 /= ap_a0;
+ap_a1 /= ap_a0; ap_a2 /= ap_a0;
+
+// SUB STRICT GUARD LPF
+sub_guard_f = sub_guard_on ? sub_guard_hz : 9999;
+sub_guard_f = sub_guard_f < 70 ? 70 : sub_guard_f;
+sub_guard_f = sub_guard_f > 140 ? 140 : sub_guard_f;
+
+w0 = 2*pi*sub_guard_f/srate; sn = sin(w0); cs = cos(w0); al = sn/(2*q);
+sg_b0 = (1-cs)/2;
+sg_b1 = 1-cs;
+sg_b2 = (1-cs)/2;
+sg_a0 = 1+al;
+sg_a1 = -2*cs;
+sg_a2 = 1-al;
+sg_b0 /= sg_a0; sg_b1 /= sg_a0; sg_b2 /= sg_a0;
+sg_a1 /= sg_a0; sg_a2 /= sg_a0;
+
+// ULE LOW SHELF
+ule_db = ule_on ? ule_amt : 0;
+ule_db = ule_db > 3 ? 3 : ule_db;
+A = 10^(ule_db/40);
+w0 = 2*pi*ule_freq/srate;
+sn = sin(w0);
+cs = cos(w0);
+S = ule_q;
+alpha = sn/2 * sqrt((A + 1/A) * (1/S - 1) + 2);
+sqrtA = sqrt(A);
+
+ule_b0 =    A * ((A+1) - (A-1)*cs + 2*sqrtA*alpha);
+ule_b1 =  2*A * ((A-1) - (A+1)*cs);
+ule_b2 =    A * ((A+1) - (A-1)*cs - 2*sqrtA*alpha);
+ule_a0 =        (A+1) + (A-1)*cs + 2*sqrtA*alpha;
+ule_a1 =   -2 * ((A-1) + (A+1)*cs);
+ule_a2 =        (A+1) + (A-1)*cs - 2*sqrtA*alpha;
+
+ule_b0 /= ule_a0; ule_b1 /= ule_a0; ule_b2 /= ule_a0;
+ule_a1 /= ule_a0; ule_a2 /= ule_a0;
+
+//================ SUB PATH ==================//
+
+tmp = in_m;
+s1a = sb_b0*tmp + sb_b1*x1 + sb_b2*x2 - sb_a1*y1 - sb_a2*y2;
+x2 = x1; x1 = tmp; y2 = y1; y1 = s1a;
+
+tmp = s1a;
+s1 = sb_b0*tmp + sb_b1*x17 + sb_b2*x18 - sb_a1*y17 - sb_a2*y18;
+x18 = x17; x17 = tmp; y18 = y17; y17 = s1;
+
+tmp = s1;
+s2a = lp_b0*tmp + lp_b1*x3 + lp_b2*x4 - lp_a1*y3 - lp_a2*y4;
+x4 = x3; x3 = tmp; y4 = y3; y3 = s2a;
+
+tmp = s2a;
+s2 = lp_b0*tmp + lp_b1*x5 + lp_b2*x6 - lp_a1*y5 - lp_a2*y6;
+x6 = x5; x5 = tmp; y6 = y5; y5 = s2;
+
+tmp = s2;
+sp = pk_b0*tmp + pk_b1*x21 + pk_b2*x22 - pk_a1*y21 - pk_a2*y22;
+x22 = x21; x21 = tmp; y22 = y21; y21 = sp;
+
+kick_mix = 0.015 + sub_pnc * 0.0015;
+kick_mix = kick_mix > 0.032 ? 0.032 : kick_mix;
+kick_mix = kick_mix < 0.008 ? 0.008 : kick_mix;
+
+sub_core = s2*(1 - kick_mix) + sp*kick_mix;
+
+tmp = sub_core;
+sub_lb = ls_b0*tmp + ls_b1*x23 + ls_b2*x24 - ls_a1*y23 - ls_a2*y24;
+x24 = x23; x23 = tmp; y24 = y23; y23 = sub_lb;
+
+sub_core = sub_lb;
+
+sub_core = sub_core*0.998 + sub_post*0.002;
+sub_post = sub_core;
+
+sub_smooth_a = exp(-2*pi*sub_smooth_hz/srate);
+sub_smooth_b = 1 - sub_smooth_a;
+sub_sm = sub_smooth_on ? (sub_sm + (sub_core - sub_sm) * sub_smooth_b) : sub_core;
+
+sub_cleanup_a = exp(-2*pi*sub_cleanup_hz/srate);
+sub_cleanup_b = 1 - sub_cleanup_a;
+sub_cl = sub_cleanup_on ? (sub_cl + (sub_sm - sub_cl) * sub_cleanup_b) : sub_sm;
+
+tmp = sub_cl;
+sg1 = sg_b0*tmp + sg_b1*x25 + sg_b2*x26 - sg_a1*y25 - sg_a2*y26;
+x26 = x25; x25 = tmp; y26 = y25; y25 = sg1;
+
+tmp = sg1;
+sg2 = sg_b0*tmp + sg_b1*x27 + sg_b2*x28 - sg_a1*y27 - sg_a2*y28;
+x28 = x27; x27 = tmp; y28 = y27; y27 = sg2;
+
+tmp = sg2;
+sg3 = sg_b0*tmp + sg_b1*x29 + sg_b2*x30 - sg_a1*y29 - sg_a2*y30;
+x30 = x29; x29 = tmp; y30 = y29; y29 = sg3;
+
+// ultra low enhancer: 30–45 Hz control lift
+tmp = sg3;
+ule1 = ule_b0*tmp + ule_b1*x31 + ule_b2*x32 - ule_a1*y31 - ule_a2*y32;
+x32 = x31; x31 = tmp; y32 = y31; y31 = ule1;
+
+out_sub = sub_guard_on ? ule1 : sub_cl;
+
+//================ MID PATH ==================//
+
+tmp = in_m;
+m1a = hp_b0*tmp + hp_b1*x7 + hp_b2*x8 - hp_a1*y7 - hp_a2*y8;
+x8 = x7; x7 = tmp; y8 = y7; y7 = m1a;
+
+tmp = m1a;
+m1 = hp_b0*tmp + hp_b1*x9 + hp_b2*x10 - hp_a1*y9 - hp_a2*y10;
+x10 = x9; x9 = tmp; y10 = y9; y9 = m1;
+
+tmp = m1;
+m1 = ml_b0*tmp + ml_b1*x13 + ml_b2*x14 - ml_a1*y13 - ml_a2*y14;
+x14 = x13; x13 = tmp; y14 = y13; y13 = m1;
+
+tmp = m1;
+ap1 = ap_b0*tmp + ap_b1*x15 + ap_b2*x16 - ap_a1*y15 - ap_a2*y16;
+x16 = x15; x15 = tmp; y16 = y15; y15 = ap1;
+
+align_d = align_on ? (align_ms * 0.001 * srate) : 0;
+align_d = align_d < 0.5 ? 0 : align_d;
+align_d = align_d > (align_buf_size - 2) ? (align_buf_size - 2) : align_d;
+
+align_i = floor(align_d);
+align_f = align_d - align_i;
+
+align_r = align_w - align_i;
+align_r < 0 ? align_r += align_buf_size;
+align_r1 = align_r - 1;
+align_r1 < 0 ? align_r1 += align_buf_size;
+
+mem[align_ofs + align_w] = ap1;
+
+mid_aligned = mem[align_ofs + align_r] * (1 - align_f) + mem[align_ofs + align_r1] * align_f;
+
+align_w += 1;
+align_w >= align_buf_size ? align_w = 0;
+
+out_mid = mid_aligned;
+
+//================ GAIN CONTROL ==================
+sub_gain = 10^((v_sub + sub_trim)/20);
+mid_gain = 10^((v_mid + mid_trim)/20);
+
+out_sub *= sub_gain;
+out_mid *= mid_gain;
+
+out_sub *= clap_gain;
+out_sub *= kick_gain;
+out_sub *= snr_gain;
+
+//================ AUTO HEADROOM ==================
+auto_env_a = exp(-2*pi*25/srate);
+auto_env_b = 1 - auto_env_a;
+auto_env += (abs(out_sub) - auto_env) * auto_env_b;
+
+auto_on ? (
+  auto_level = auto_env > auto_thr ? (auto_env - auto_thr) / (1 - auto_thr) : 0;
+  auto_level = auto_level > 1 ? 1 : auto_level;
+  auto_target = 1 - auto_amt * auto_level;
+  auto_gain += (auto_target - auto_gain) * auto_rel;
+) : (
+  auto_gain = 1;
+);
+
+auto_gain > 1 ? auto_gain = 1;
+auto_gain < 0.10 ? auto_gain = 0.10;
+
+out_sub *= auto_gain;
+
+//================ OUTPUT ==================
+sub_out = sub_inv ? -out_sub : out_sub;
+mid_out = mid_inv ? -out_mid : out_mid;
+
+out_mode == 0 ? (
+  spl0 = mid_out;
+  spl1 = sub_out;
+) : (
+  spl0 = sub_out;
+  spl1 = mid_out;
+);
