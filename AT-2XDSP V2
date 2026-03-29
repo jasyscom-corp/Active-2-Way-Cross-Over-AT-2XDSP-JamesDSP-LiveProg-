@@ -1,0 +1,177 @@
+desc:Active Crossover PRO FLAGSHIP V3 By AnjasTec
+//tags: crossover, compressor, dsp
+
+
+//================ USER CONTROL =================//
+
+//sub_bot:35<20,80,1>Subsonic (Hz)
+//sub_pnc:3<0,12,0.5>Base Punch (dB)
+//xo_pt:85<50,250,1>Crossover Base (Hz)
+//xo_rng:12<0,40,1>Dynamic XO Range
+//b_mid:2<-12,12,0.5>Bass-Mid (dB)
+//m_high:6<-12,12,0.5>Mid-High (dB)
+//v_sub:0<-20,12,0.5>Sub Vol (dB)
+//v_mid:0<-20,12,0.5>Mid Vol (dB)
+//drv_sub:2<0,12,0.5>Sub Drive
+//drv_mid:1<0,12,0.5>Mid Drive
+//dyn_p:3<0,12,0.5>Dynamic Punch
+//comp_th:-12<-40,0,1>Sub Comp Threshold (dB)
+//comp_rt:2<1,6,0.1>Comp Ratio
+//sm_ms:20<1,100,1>Smoothing (ms)
+//sub_inv:0<0,1,1>Sub Phase
+//mid_inv:0<0,1,1>Mid Phase
+
+@init
+pi = $PI;
+q_std = 0.707;
+limit_th = 0.95;
+
+// default
+sub_bot=35; sub_pnc=3; xo_pt=85; xo_rng=12;
+b_mid=2; m_high=6;
+v_sub=0; v_mid=0;
+drv_sub=2; drv_mid=1;
+dyn_p=3; sm_ms=40;
+comp_th=-12; comp_rt=2;
+
+sub_inv=0; mid_inv=0;
+
+// state
+env=0;
+rms=0;
+xo_dyn=xo_pt;
+
+// memory
+memset(0,0,400);
+
+t0=-1;
+
+@sample
+
+//================ ENVELOPE =================
+env = max(abs(spl0+spl1)*0.5, env*0.995);
+
+// RMS detector (lebih smooth dari peak)
+rms = sqrt(env*env*0.1 + rms*0.9);
+
+//================ DYNAMIC XO =================
+xo_target = xo_pt + env * xo_rng;
+xo_dyn += (xo_target - xo_dyn)*0.01;
+
+//================ PARAM UPDATE =================
+(abs(xo_dyn - t0) > 0.1)?(
+
+  g_sub = 10^(v_sub/20);
+  g_mid = 10^(v_mid/20);
+
+  pnc_base = 10^(sub_pnc/20);
+
+  bm_gain = 10^(b_mid/20);
+  mh_gain = 10^(m_high/20);
+
+  drv_s = 10^(drv_sub/20);
+  drv_m = 10^(drv_mid/20);
+
+  comp_thr = 10^(comp_th/20);
+
+  // SUBSONIC
+  w0 = 2*pi*sub_bot/srate; sn=sin(w0); cs=cos(w0); al=sn/(2*q_std);
+  sb_b0=(1+cs)/2; sb_b1=-(1+cs); sb_b2=(1+cs)/2;
+  sb_a0=1+al; sb_a1=-2*cs; sb_a2=1-al;
+  sb_b0/=sb_a0; sb_b1/=sb_a0; sb_b2/=sb_a0;
+  sb_a1/=sb_a0; sb_a2/=sb_a0;
+
+  // XO
+  w0 = 2*pi*xo_dyn/srate; sn=sin(w0); cs=cos(w0); al=sn/(2*q_std);
+
+  lp_b0=(1-cs)/2; lp_b1=1-cs; lp_b2=(1-cs)/2;
+  lp_a0=1+al; lp_a1=-2*cs; lp_a2=1-al;
+
+  hp_b0=(1+cs)/2; hp_b1=-(1+cs); hp_b2=(1+cs)/2;
+  hp_a0=1+al; hp_a1=-2*cs; hp_a2=1-al;
+
+  lp_b0/=lp_a0; lp_b1/=lp_a0; lp_b2/=lp_a0;
+  lp_a1/=lp_a0; lp_a2/=lp_a0;
+
+  hp_b0/=hp_a0; hp_b1/=hp_a0; hp_b2/=hp_a0;
+  hp_a1/=hp_a0; hp_a2/=hp_a0;
+
+  // MID EQ
+  w0=2*pi*250/srate; sn=sin(w0); cs=cos(w0); al=sn/(2*q_std);
+  bm_b0=1+al*bm_gain; bm_b1=-2*cs; bm_b2=1-al*bm_gain;
+  bm_a0=1+al/bm_gain; bm_a1=-2*cs; bm_a2=1-al/bm_gain;
+  bm_b0/=bm_a0; bm_b1/=bm_a0; bm_b2/=bm_a0;
+  bm_a1/=bm_a0; bm_a2/=bm_a0;
+
+  // HIGH
+  w0=2*pi*3000/srate; sn=sin(w0); cs=cos(w0); al=sn/(2*q_std);
+  sqrt_g=sqrt(mh_gain);
+  th_b0 = mh_gain*((mh_gain+1)-(mh_gain-1)*cs+2*sqrt_g*al);
+  th_b1 = 2*mh_gain*((mh_gain-1)-(mh_gain+1)*cs);
+  th_b2 = mh_gain*((mh_gain+1)-(mh_gain-1)*cs-2*sqrt_g*al);
+  th_a0 = (mh_gain+1)+(mh_gain-1)*cs+2*sqrt_g*al;
+  th_a1 = -2*((mh_gain-1)+(mh_gain+1)*cs);
+  th_a2 = (mh_gain+1)+(mh_gain-1)*cs-2*sqrt_g*al;
+  th_b0/=th_a0; th_b1/=th_a0; th_b2/=th_a0;
+  th_a1/=th_a0; th_a2/=th_a0;
+
+  t0=xo_dyn;
+);
+
+//================ INPUT =================
+in_m = (spl0 + spl1)*0.5;
+
+//================ SUB PATH =================
+s1 = sb_b0*in_m + sb_b1*x1 + sb_b2*x2 - sb_a1*y1 - sb_a2*y2;
+x2=x1; x1=in_m; y2=y1; y1=s1;
+
+// LR4
+s2a = lp_b0*s1 + lp_b1*x3 + lp_b2*x4 - lp_a1*y3 - lp_a2*y4;
+x4=x3; x3=s1; y4=y3; y3=s2a;
+
+s2 = lp_b0*s2a + lp_b1*x5 + lp_b2*x6 - lp_a1*y5 - lp_a2*y6;
+x6=x5; x5=s2a; y6=y5; y5=s2;
+
+// dynamic punch
+pnc = 10^((sub_pnc + env*dyn_p)/20);
+out_sub = s2 * pnc;
+
+//================ COMPRESSOR =================
+over = rms > comp_thr ? (rms/comp_thr) : 1;
+comp_gain = over > 1 ? (1 / (over^(1/comp_rt))) : 1;
+
+out_sub *= comp_gain;
+
+//================ DRIVE =================
+out_sub = atan(out_sub * drv_s)/atan(drv_s);
+
+//================ MID PATH =================
+m1a = hp_b0*in_m + hp_b1*x7 + hp_b2*x8 - hp_a1*y7 - hp_a2*y8;
+x8=x7; x7=in_m; y8=y7; y7=m1a;
+
+m1 = hp_b0*m1a + hp_b1*x9 + hp_b2*x10 - hp_a1*y9 - hp_a2*y10;
+x10=x9; x9=m1a; y10=y9; y9=m1;
+
+m2 = bm_b0*m1 + bm_b1*x11 + bm_b2*x12 - bm_a1*y11 - bm_a2*y12;
+x12=x11; x11=m1; y12=y11; y11=m2;
+
+m3 = th_b0*m2 + th_b1*x13 + th_b2*x14 - th_a1*y13 - th_a2*y14;
+x14=x13; x13=m2; y14=y13; y13=m3;
+
+out_mid = atan(m3 * drv_m)/atan(drv_m);
+
+//================ GAIN =================
+out_sub *= g_sub;
+out_mid *= g_mid;
+
+//================ POLARITY =================
+sub_out = sub_inv ? -out_sub : out_sub;
+mid_out = mid_inv ? -out_mid : out_mid;
+
+//================ PEAK LIMIT =================
+abs(sub_out)>limit_th ? sub_out=sign(sub_out)*limit_th;
+abs(mid_out)>limit_th ? mid_out=sign(mid_out)*limit_th;
+
+//================ OUTPUT =================
+spl0 = mid_out;
+spl1 = sub_out; 
