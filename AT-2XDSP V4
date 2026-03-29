@@ -1,0 +1,497 @@
+desc:Active 2 Way CrossOver LR4 DSP Processor By AnjasTec (AT-2XDSP) v4
+//tags: crossover, dsp, foh, signal processor, gain controls, precision LR4 controls, subwoofer controls
+
+//================= USER CONTROL ==================//
+//================ FINAL REFERENCE ================//
+// Profile  : EDM Deep Bass / Dangdut / Hardcores / Touring Concert Style
+// Status   : Stable (Linear Sub / Anti-Clk / Separate Band Protection / Clean Phase / LR4 Precision)
+// Tuning   : Locked for practical daily use
+// Warning  : Avoid extreme changes on:
+//            - comp_th (compression threshold)
+//            - dyn_p   (dynamic punch)
+//            - kick_q  (kick focus width)
+//=================================================//
+
+//================ LOW END CONTROL ==================//
+//sub_bot:32<25,55,1>Subsonic (Hz) | Cut frekuensi ultra rendah (LR4 anti rumble)
+//sub_tune:0<-10,10,0.5>Subsonic Tune (Hz) | Geser titik subsonic tanpa ubah base
+//sub_q:1.15<0.5,1.5,0.01>Subsonic Q | Ketegasan / karakter subsonic
+
+//sub_pnc:3<0,12,0.5>Kick Punch (dB) | Kick focus untuk attack tipis
+//kick_freq:48<45,65,1>Kick Punch (Hz) | Punch kick tuner
+//kick_q:5<1,10,0.1>Kick Punch (Q) | Lebar fokus frekuensi punch kick
+
+//sbass_on:1<0,1,1>Sub-Bass On | Fokus body sub-bass aktif
+//sbass_freq:60<58,78,1>Sub-Bass Freq (Hz) | Titik fokus sub-bass natural
+//sbass_q:0.95<0.5,1.5,0.01>Sub-Bass Shape | Slope / focus shelf
+//sbass_amt:0.85<0,4,0.1>Sub-Bass Amount | Kedalaman body sub-bass
+
+//================ CROSSOVER ==================//
+//xo_pt:72<60,80,1>Crossover Base (Hz) | Titik pisah sub vs mid (LR4)
+//xo_rng:10<0,50,1>Dynamic Base Range | Pergerakan base mengikuti energi bass
+//mid_low:75<75,150,1>Mid Low Cut (Hz) | HPF untuk jalur mid (LR4)
+
+//================ DYNAMIC MANAGEMENT ==================//
+//dyn_base:-2.50<-6,6,0.5>Dynamic Base Bias (dB) | Sensitivitas kontrol dinamis antar band
+//aeq_amt:2.5<0,4,0.1>Auto EQ Amount | Depth koreksi tone adaptif (bass-mid / mid-high)
+//stb_on:1<0,1,1>Stabilizer On | Redam resonansi / harshness otomatis
+//stb_amt:2.5<0,4,0.1>Stabilizer Amount | Kedalaman penekanan resonansi
+//clr_on:1<0,1,1>Clarity On | Presence / detail lift otomatis
+//clr_amt:3<0,4,0.1>Clarity Amount | Kedalaman high-detail lift
+//dm_on:1<0,1,1>Dynamic Match On | Penyeimbang energi antar band otomatis
+//dm_amt:3<0,4,0.1>Dynamic Match Amount | Kedalaman balancing antar band
+
+//================ LOOKAHEAD PROTECTION ==================//
+//look_ahead:0.86<0,5,0.1>Lookahead Buffer (ms) | Buffer untuk deteksi spike awal
+//spike_th:0.80<0.5,1.5,0.05>Spike Threshold | Threshold deteksi spike
+//dc_th:0.02<0.001,0.1,0.001>DC Threshold | Threshold deteksi DC offset
+//lim_look:0.70<0.5,1.5,0.05>Lookahead Limiter | Limiter untuk spike
+
+//================ LEVEL CONTROL ==================//
+//v_sub:0<-20,12,0.5>Sub Vol (dB) | Level utama subwoofer
+//v_mid:0<-20,12,0.5>Mid Vol (dB) | Level utama mid/high
+//sub_trim:-2<-6,6,0.5>Sub Trim | Fine adjustment sub (subsonic range)
+//mid_trim:-1<-6,6,0.5>Mid Trim | Fine adjustment mid (bass-mid range)
+
+//================ CHARACTER / COLOR ==================//
+//drv_sub:0.00<0,5,0.5>Sub Drive | Sat sub warm
+//drv_mid:1<0,5,0.5>Mid Drive | Sat mid/high warm
+
+//================ DYNAMIC CONTROL ==================//
+//dyn_p:1.50<0,12,0.5>Dynamic Punch | Punch mengikuti envelope signal
+//atk_ms:15<5,100,1>Punch Attack (ms)
+//rel_ms:220<20,300,1>Punch Release (ms)
+//comp_th:-15<-40,0,1>Sub Comp Threshold (dB)
+//comp_rt:3.50<1,6,0.1>Comp Ratio
+
+//================ OUTPUT CONTROL ==================//
+//sub_inv:0<0,1,1>Sub Phase | Balik phase sub (0=normal / 1=invert)
+//mid_inv:0<0,1,1>Mid Phase | Balik phase mid
+//out_mode:0<0,1,1>Output Mode
+//0 = Mid (L) | Sub (R)
+//1 = Sub (L) | Mid (R)
+
+@init
+pi = $PI;
+q = 0.70710678;
+
+// safety ceiling
+limit_th = 0.985;
+hard_th  = 0.998;
+
+// default tuning
+sub_bot = 35;
+sub_tune = 0.00;
+sub_q = 0.95;
+
+sub_pnc = 1.20;
+kick_freq = 48;
+kick_q = 3.80;
+
+sbass_on = 1;
+sbass_freq = 64;
+sbass_q = 0.90;
+sbass_amt = 0.60;
+
+xo_pt = 72;
+xo_rng = 10;
+mid_low = 78;
+
+dyn_base = -1.00;
+aeq_amt = 0.40;
+
+stb_on = 1;
+stb_amt = 0.35;
+clr_on = 1;
+clr_amt = 0.45;
+dm_on = 1;
+dm_amt = 0.45;
+
+// lookahead defaults
+look_ahead = 0.60;
+spike_th = 1.05;
+dc_th = 0.01;
+lim_look = 0.60;
+
+v_sub = 0.00;
+v_mid = 0.00;
+sub_trim = -1.00;
+mid_trim = 2.50;
+
+drv_sub = 0.00;
+drv_mid = 0.60;
+
+dyn_p = 1.20;
+atk_ms = 20;
+rel_ms = 220;
+comp_th = -11;
+comp_rt = 2.00;
+
+sub_inv = 0;
+mid_inv = 0;
+out_mode = 0;
+
+// envelopes
+env = 0;
+rms = 0;
+p_env = 0;
+xo_dyn = xo_pt;
+mix_gr = 1;
+
+// per-band protection
+sub_look_gr = 1;
+mid_look_gr = 1;
+
+// band detectors for adaptive management
+sub_env = 0;
+mid_env = 0;
+hi_env = 0;
+mid_prev = 0;
+kick_env = 0;
+raw_prev = 0;
+dc_est = 0;
+
+// lookahead states
+look_buf_size = 4096;
+look_w = 0;
+
+// smoothing
+g_sub = 1;
+g_mid = 1;
+drv_s = 1;
+drv_m = 1;
+
+// sub post smoothing
+sub_post = 0;
+mid_post = 0;
+
+// filter states
+x1=0; x2=0; x3=0; x4=0; x5=0; x6=0; x7=0; x8=0;
+x9=0; x10=0; x11=0; x12=0; x13=0; x14=0; x15=0; x16=0;
+x17=0; x18=0; x19=0; x20=0; x21=0; x22=0; x23=0; x24=0;
+y1=0; y2=0; y3=0; y4=0; y5=0; y6=0; y7=0; y8=0;
+y9=0; y10=0; y11=0; y12=0; y13=0; y14=0; y15=0; y16=0;
+y17=0; y18=0; y19=0; y20=0; y21=0; y22=0; y23=0; y24=0;
+
+@sample
+
+//================ LOOKAHEAD INPUT / DC PROTECTION ==================
+in_raw = (spl0 + spl1) * 0.5;
+
+raw_delta = in_raw - raw_prev;
+spike = max(abs(in_raw), abs(raw_delta) * 1.8);
+raw_prev = in_raw;
+
+dc_est += (in_raw - dc_est) * 0.0003;
+dc_abs = abs(dc_est);
+dc_corr = dc_abs > dc_th ? dc_est : (dc_est * 0.25);
+
+// lookahead buffer
+look_delay = look_ahead * 0.001 * srate;
+look_delay = look_delay < 1 ? 1 : look_delay;
+look_delay = look_delay > (look_buf_size - 2) ? (look_buf_size - 2) : look_delay;
+look_delay_i = floor(look_delay);
+
+look_r = look_w - look_delay_i;
+look_r < 0 ? look_r += look_buf_size;
+
+look_in = mem[look_r];
+mem[look_w] = in_raw;
+
+look_w += 1;
+look_w >= look_buf_size ? look_w = 0;
+
+in_m = look_in - dc_corr;
+
+//================ ENVELOPE ==================
+env = max(abs(in_m), env*0.985);
+rms = sqrt(env*env*0.12 + rms*0.88);
+kick_env = max(abs(raw_delta), kick_env*0.96);
+
+//================ ATTACK / RELEASE ==================
+atk = exp(-1/(atk_ms*0.001*srate));
+rel = exp(-1/(rel_ms*0.001*srate));
+
+target = env;
+p_env = target > p_env ? (p_env*atk + target*(1-atk)) : (p_env*rel + target*(1-rel));
+p_env = p_env > 1 ? 1 : p_env;
+
+//================ SMOOTH GAIN ==================
+sm_a = exp(-1/(45*0.001*srate));
+sm_b = 1 - sm_a;
+
+g_sub_t = 10^((v_sub + sub_trim)/20);
+g_mid_t = 10^((v_mid + mid_trim)/20);
+drv_s_t = 1 + drv_sub*0.08;
+drv_m_t = 1 + drv_mid*0.08;
+
+g_sub += (g_sub_t - g_sub) * sm_b;
+g_mid += (g_mid_t - g_mid) * sm_b;
+drv_s += (drv_s_t - drv_s) * sm_b;
+drv_m += (drv_m_t - drv_m) * sm_b;
+
+//================ DYNAMIC XO ==================
+xo_target = xo_pt + env*xo_rng;
+xo_dyn += (xo_target - xo_dyn) * 0.003;
+
+//================ FILTER CALC ==================
+
+// SUBSONIC HPF
+sub_cut = sub_bot + sub_tune;
+sub_cut = sub_cut < 20 ? 20 : sub_cut;
+sub_cut = sub_cut > 55 ? 55 : sub_cut;
+
+w0 = 2*pi*sub_cut/srate; sn = sin(w0); cs = cos(w0); al = sn/(2*sub_q);
+sb_b0 = (1+cs)/2;
+sb_b1 = -(1+cs);
+sb_b2 = (1+cs)/2;
+sb_a0 = 1+al;
+sb_a1 = -2*cs;
+sb_a2 = 1-al;
+sb_b0 /= sb_a0; sb_b1 /= sb_a0; sb_b2 /= sb_a0;
+sb_a1 /= sb_a0; sb_a2 /= sb_a0;
+
+// XO LPF / HPF
+w0 = 2*pi*xo_dyn/srate; sn = sin(w0); cs = cos(w0); al = sn/(2*q);
+
+// LPF
+lp_b0 = (1-cs)/2;
+lp_b1 = 1-cs;
+lp_b2 = (1-cs)/2;
+lp_a0 = 1+al;
+lp_a1 = -2*cs;
+lp_a2 = 1-al;
+lp_b0 /= lp_a0; lp_b1 /= lp_a0; lp_b2 /= lp_a0;
+lp_a1 /= lp_a0; lp_a2 /= lp_a0;
+
+// HPF
+hp_b0 = (1+cs)/2;
+hp_b1 = -(1+cs);
+hp_b2 = (1+cs)/2;
+hp_a0 = 1+al;
+hp_a1 = -2*cs;
+hp_a2 = 1-al;
+hp_b0 /= hp_a0; hp_b1 /= hp_a0; hp_b2 /= hp_a0;
+hp_a1 /= hp_a0; hp_a2 /= hp_a0;
+
+// MID LOW CUT
+w0 = 2*pi*mid_low/srate; sn = sin(w0); cs = cos(w0); al = sn/(2*q);
+ml_b0 = (1+cs)/2;
+ml_b1 = -(1+cs);
+ml_b2 = (1+cs)/2;
+ml_a0 = 1+al;
+ml_a1 = -2*cs;
+ml_a2 = 1-al;
+ml_b0 /= ml_a0; ml_b1 /= ml_a0; ml_b2 /= ml_a0;
+ml_a1 /= ml_a0; ml_a2 /= ml_a0;
+
+// SUB-BASS LOW SHELF (very mild, linear body)
+sbass_db = sbass_on ? (sbass_amt * 0.85) : 0;
+sbass_db = sbass_db > 1.2 ? 1.2 : sbass_db;
+A = 10^(sbass_db/40);
+w0 = 2*pi*sbass_freq/srate;
+sn = sin(w0);
+cs = cos(w0);
+S = sbass_q;
+alpha = sn/2 * sqrt((A + 1/A) * (1/S - 1) + 2);
+sqrtA = sqrt(A);
+
+ls_b0 =    A * ((A+1) - (A-1)*cs + 2*sqrtA*alpha);
+ls_b1 =  2*A * ((A-1) - (A+1)*cs);
+ls_b2 =    A * ((A+1) - (A-1)*cs - 2*sqrtA*alpha);
+ls_a0 =        (A+1) + (A-1)*cs + 2*sqrtA*alpha;
+ls_a1 =   -2 * ((A-1) + (A+1)*cs);
+ls_a2 =        (A+1) + (A-1)*cs - 2*sqrtA*alpha;
+
+ls_b0 /= ls_a0; ls_b1 /= ls_a0; ls_b2 /= ls_a0;
+ls_a1 /= ls_a0; ls_a2 /= ls_a0;
+
+// KICK FOCUS
+w0 = 2*pi*kick_freq/srate; sn = sin(w0); cs = cos(w0);
+al = sn/(2*kick_q);
+g = 10^(sub_pnc/20);
+
+pk_b0 = 1+al*g;
+pk_b1 = -2*cs;
+pk_b2 = 1-al*g;
+pk_a0 = 1+al/g;
+pk_a1 = -2*cs;
+pk_a2 = 1-al/g;
+
+pk_b0 /= pk_a0; pk_b1 /= pk_a0; pk_b2 /= pk_a0;
+pk_a1 /= pk_a0; pk_a2 /= pk_a0;
+
+//================ SUB PATH ==================
+
+// SUBSONIC LR4
+tmp = in_m;
+s1a = sb_b0*tmp + sb_b1*x1 + sb_b2*x2 - sb_a1*y1 - sb_a2*y2;
+x2 = x1; x1 = tmp; y2 = y1; y1 = s1a;
+
+tmp = s1a;
+s1 = sb_b0*tmp + sb_b1*x17 + sb_b2*x18 - sb_a1*y17 - sb_a2*y18;
+x18 = x17; x17 = tmp; y18 = y17; y17 = s1;
+
+// LPF LR4
+tmp = s1;
+s2a = lp_b0*tmp + lp_b1*x3 + lp_b2*x4 - lp_a1*y3 - lp_a2*y4;
+x4 = x3; x3 = tmp; y4 = y3; y3 = s2a;
+
+tmp = s2a;
+s2 = lp_b0*tmp + lp_b1*x5 + lp_b2*x6 - lp_a1*y5 - lp_a2*y6;
+x6 = x5; x5 = tmp; y6 = y5; y5 = s2;
+
+// optional tiny kick presence, kept extremely small
+tmp = s2;
+sp = pk_b0*tmp + pk_b1*x21 + pk_b2*x22 - pk_a1*y21 - pk_a2*y22;
+x22 = x21; x21 = tmp; y22 = y21; y21 = sp;
+
+kick_mix = 0.012 + sub_pnc * 0.0018;
+kick_mix = kick_mix > 0.035 ? 0.035 : kick_mix;
+kick_mix = kick_mix < 0.010 ? 0.010 : kick_mix;
+kick_mix *= (1 - spike * 0.04);
+kick_mix = kick_mix < 0.010 ? 0.010 : kick_mix;
+
+sub_core = s2*(1 - kick_mix) + sp*kick_mix;
+
+// apply very mild body shelf
+tmp = sub_core;
+sub_lb = ls_b0*tmp + ls_b1*x23 + ls_b2*x24 - ls_a1*y23 - ls_a2*y24;
+x24 = x23; x23 = tmp; y24 = y23; y23 = sub_lb;
+
+sub_core = sub_lb;
+
+// sub soft smoothing only, no drive
+sub_core = sub_core*0.985 + (tanh(sub_core*0.98)/tanh(0.98))*0.015;
+
+out_sub = sub_core;
+
+// sub-only limiter, based only on sub band
+sub_peak = abs(out_sub);
+sub_look_t = sub_peak > limit_th ? (limit_th / sub_peak) : 1;
+sub_look_gr += (sub_look_t - sub_look_gr) * (sub_look_t < sub_look_gr ? 0.12 : 0.002);
+sub_look_gr = sub_look_gr < 0.80 ? 0.80 : sub_look_gr;
+sub_look_gr = sub_look_gr > 1 ? 1 : sub_look_gr;
+out_sub *= sub_look_gr;
+
+// final very gentle ceiling
+out_sub = tanh(out_sub * 1.004) / tanh(1.004);
+
+// band detector update from sub
+sub_env = max(abs(out_sub), sub_env*0.995);
+
+//================ MID PATH ==================
+
+// HPF LR4
+tmp = in_m;
+m1a = hp_b0*tmp + hp_b1*x7 + hp_b2*x8 - hp_a1*y7 - hp_a2*y8;
+x8 = x7; x7 = tmp; y8 = y7; y7 = m1a;
+
+tmp = m1a;
+m1 = hp_b0*tmp + hp_b1*x9 + hp_b2*x10 - hp_a1*y9 - hp_a2*y10;
+x10 = x9; x9 = tmp; y10 = y9; y9 = m1;
+
+// MID LOW CUT
+tmp = m1;
+m1 = ml_b0*tmp + ml_b1*x13 + ml_b2*x14 - ml_a1*y13 - ml_a2*y14;
+x14 = x13; x13 = tmp; y14 = y13; y13 = m1;
+
+// band detectors
+mid_env = max(abs(m1), mid_env*0.995);
+hi_env = max(abs(m1 - mid_prev), hi_env*0.995);
+mid_prev = m1;
+
+//================ DYNAMIC AUTO EQ / TONE MANAGEMENT ==================
+dyn_thr = 0.12 + dyn_base*0.01;
+dyn_thr = dyn_thr < 0.05 ? 0.05 : dyn_thr;
+dyn_thr = dyn_thr > 0.35 ? 0.35 : dyn_thr;
+
+// very light bass-mid trim
+lm_cut = sub_env > dyn_thr ? ((sub_env - dyn_thr) * 0.22 * aeq_amt) : 0;
+lm_cut = lm_cut > 0.04 ? 0.04 : lm_cut;
+
+// very light mid-high trim
+hm_cut = hi_env > (dyn_thr*0.80) ? ((hi_env - dyn_thr*0.80) * 0.25 * aeq_amt) : 0;
+hm_cut = hm_cut > 0.04 ? 0.04 : hm_cut;
+
+m1 = m1 * (1 - lm_cut);
+
+// mid drive, gentle only
+mid_drive = atan(m1 * drv_m) / atan(drv_m);
+out_mid = mid_drive * (1 - hm_cut);
+
+// mid-only limiter
+mid_peak = abs(out_mid);
+mid_look_t = mid_peak > limit_th ? (limit_th / mid_peak) : 1;
+mid_look_gr += (mid_look_t - mid_look_gr) * (mid_look_t < mid_look_gr ? 0.12 : 0.002);
+mid_look_gr = mid_look_gr < 0.80 ? 0.80 : mid_look_gr;
+mid_look_gr = mid_look_gr > 1 ? 1 : mid_look_gr;
+out_mid *= mid_look_gr;
+
+// final mild ceiling
+out_mid = tanh(out_mid * 1.004) / tanh(1.004);
+
+//================ DYNAMIC MANAGEMENT LAYER ==================
+stb_env = (hi_env * 0.50) + (spike * 0.12);
+stb_env = stb_env > 1 ? 1 : stb_env;
+
+clr_env = 1 - hi_env;
+clr_env = clr_env < 0 ? 0 : clr_env;
+clr_env = clr_env > 1 ? 1 : clr_env;
+
+// stabilizer: mid only, very light
+stb_gain_mid = 1;
+stb_on ? (
+  stb_red = (stb_env - 0.10) * 0.020 * stb_amt;
+  stb_red = stb_red > 0.03 ? 0.03 : stb_red;
+  stb_red = stb_red < 0 ? 0 : stb_red;
+  stb_gain_mid = 1 - stb_red;
+);
+
+// clarity: tiny lift
+clr_gain = 1;
+clr_on ? (
+  clr_up = clr_env * 0.004 * clr_amt;
+  clr_up = clr_up > 0.012 ? 0.012 : clr_up;
+  clr_gain = 1 + clr_up;
+);
+
+// dynamic match: only touch mid when sub is already big
+dm_mid = 1;
+dm_on ? (
+  dm_err = sub_env * 0.03 * dm_amt;
+  dm_err = dm_err > 0.03 ? 0.03 : dm_err;
+  dm_mid = 1 - dm_err;
+  dm_mid = dm_mid < 0.97 ? 0.97 : dm_mid;
+  dm_mid = dm_mid > 1 ? 1 : dm_mid;
+);
+
+out_mid *= (stb_gain_mid * clr_gain * dm_mid);
+
+//================ FINAL OUTPUT ==================
+
+out_sub *= g_sub;
+out_mid *= g_mid;
+
+// phase
+sub_out = sub_inv ? -out_sub : out_sub;
+mid_out = mid_inv ? -out_mid : out_mid;
+
+// final soft ceiling, very mild
+sub_out = tanh(sub_out * 1.002) / tanh(1.002);
+mid_out = tanh(mid_out * 1.002) / tanh(1.002);
+
+// routing
+out_mode == 0 ? (
+  spl0 = mid_out;
+  spl1 = sub_out;
+) : (
+  spl0 = sub_out;
+  spl1 = mid_out;
+);
+
+// final safety clamp
+spl0 > hard_th ? spl0 = hard_th;
+spl0 < -hard_th ? spl0 = -hard_th;
+spl1 > hard_th ? spl1 = hard_th;
+spl1 < -hard_th ? spl1 = -hard_th; 
