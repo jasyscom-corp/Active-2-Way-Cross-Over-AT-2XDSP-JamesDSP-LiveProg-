@@ -1,3 +1,8 @@
+![DSP](https://img.shields.io/badge/DSP-RealTime-blue)
+![Platform](https://img.shields.io/badge/Platform-JamesDSP-green)
+![Status](https://img.shields.io/badge/Status-Active-success)
+![CPU](https://img.shields.io/badge/CPU-Mobile%20Optimized-orange)
+
 # Active 2-Way Crossover DSP (AT-2XDSP)
 
 AT-2XDSP is a real-time 2-way crossover DSP for JamesDSP LiveProg, built for clean subwoofer control, tight low-end, phase alignment, and controlled high-SPL playback.
